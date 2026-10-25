@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Дневник зала</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Зал">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eceff4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1218" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* Одна колонка-журнал, нижняя панель вкладок как в приложениях iPhone */
+:root{
+  --bg:#eceff4; --surface:#ffffff; --sunk:#f4f6f9; --ink:#141922; --muted:#5b6576; --line:#d5dbe4;
+  --accent:#1d4ed0; --accent-soft:#e2e9fb; --accent-ink:#ffffff;
+  --go:#17784a; --go-soft:#dff2e8; --warn:#8a5a00; --warn-soft:#fbefd5; --danger:#b3261e;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+  --f-num:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1218; --surface:#161b24; --sunk:#1c222d; --ink:#e7eaf0; --muted:#97a1b3; --line:#2a3140;
+  --accent:#7196ff; --accent-soft:#1d2a4a; --accent-ink:#0b1020;
+  --go:#4cc487; --go-soft:#16301f; --warn:#f0c05a; --warn-soft:#33280f; --danger:#ff8a80; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:640px;margin:0 auto;padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 90px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--f-display);font-weight:800;font-size:28px;letter-spacing:-.02em;margin:0}
+h2{font-family:var(--f-display);font-weight:700;font-size:17px;margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+header{display:grid;gap:12px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.stat b{font-family:var(--f-num);font-size:17px;font-weight:700}
+.stat small{font-size:12px;color:var(--muted)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px max(8px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 6px) max(8px,env(safe-area-inset-right,0px))}
+nav button{flex:1;font:600 12px var(--f-body);color:var(--muted);background:none;border:0;padding:6px 2px;border-radius:10px;display:grid;justify-items:center;gap:2px;cursor:pointer}
+nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-selected="true"]{color:var(--accent)}
+nav .dot{position:relative}
+nav .dot::after{content:"";position:absolute;top:-1px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stack{display:grid;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.dayhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.plate{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:800 14px var(--f-display);flex:none}
+.dayttl{display:flex;align-items:center;gap:10px}
+.pill{font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:99px}
+.ex{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding-block:10px;border-top:1px solid var(--line)}
+.ex:first-of-type{border-top:0}
+.ex .nm{font-weight:600}
+.ex .rng{font-size:13px;color:var(--muted)}
+.ex .last{font-size:13px;text-align:right}
+.chip{grid-column:1/-1;justify-self:start;font-size:13px;font-weight:600;padding:3px 9px;border-radius:99px;margin-top:4px;background:var(--sunk);color:var(--muted)}
+.chip.up{background:var(--go-soft);color:var(--go)}
+.rule{font-size:14px;color:var(--muted)}
+.rule p{margin:0 0 6px}
+.alert{border-radius:14px;padding:12px 14px;font-size:14px;display:grid;gap:8px;background:var(--warn-soft);color:var(--ink);border:1px solid var(--line)}
+.alert b{color:var(--warn)}
+.alert.ok{background:var(--go-soft)}
+.alert.ok b{color:var(--go)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+input,select,textarea{font:500 16px var(--f-body);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0;-webkit-appearance:none;appearance:none}
+input[type=date]{min-height:44px}
+textarea{resize:vertical;min-height:48px}
+.seg{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;font:700 15px var(--f-body);border:0;background:none;color:var(--muted);padding:9px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.exlog{display:grid;gap:6px}
+.exlog .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--muted)}
+.hint.up{color:var(--go);font-weight:600}
+.setrow{display:grid;grid-template-columns:22px 1fr 1fr 1fr 34px;gap:6px;align-items:center}
+.setrow.hdr span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.setrow .n{font:700 13px var(--f-num);color:var(--muted);text-align:center}
+.setrow input{font-family:var(--f-num);padding:10px 4px;text-align:center}
+.icon{border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer;border-radius:8px;padding:6px;line-height:1}
+.addset{justify-self:start;font:600 14px var(--f-body);color:var(--accent);background:none;border:0;padding:6px 0;cursor:pointer}
+.primary{font:700 16px var(--f-body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:14px;cursor:pointer;width:100%}
+.primary:disabled{opacity:.5}
+.secondary{font:600 15px var(--f-body);background:var(--sunk);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;width:100%}
+.ghost{font:600 13px var(--f-body);background:none;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 11px;cursor:pointer}
+.ghost.danger{color:var(--danger);border-color:var(--danger)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.toast{font-size:14px;font-weight:600;color:var(--go);text-align:center;min-height:20px}
+.toast.err{color:var(--danger)}
+.wk{display:grid;gap:8px}
+.wk .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.wk .d{font-weight:700}
+.wk ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.wk li{display:grid;gap:1px}
+.wk li .s{font-family:var(--f-num);font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.tag{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.note{font-size:13px;color:var(--muted);font-style:italic}
+.chart{width:100%;height:auto;display:block}
+.chart text{font-family:var(--f-num);font-size:15px;fill:var(--muted)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .ar{fill:var(--accent-soft)}
+.chart .pt{fill:var(--surface);stroke:var(--accent);stroke-width:2}
+.chart .end{fill:var(--accent)}
+.chart .endlbl{fill:var(--ink);font-weight:700;font-size:16px}
+.empty{color:var(--muted);text-align:center;padding:20px 8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:600;text-align:right;overflow-wrap:anywhere}
+.small{font-size:13px;color:var(--muted)}
+.small ol{margin:6px 0 0;padding-left:20px;display:grid;gap:4px}
+@media (max-width:360px){.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Фулбади 2 раза в неделю · A / B</div>
+      <h1>Дневник зала</h1>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <div id="top-alert"></div>
+  <section id="v-prog" class="stack"></section>
+  <section id="v-log" class="stack" hidden></section>
+  <section id="v-hist" class="stack" hidden></section>
+  <section id="v-graph" class="stack" hidden></section>
+  <section id="v-data" class="stack" hidden></section>
+</div>
+
+<nav role="tablist" id="tabs">
+  <button role="tab" data-t="prog" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Программа</button>
+  <button role="tab" data-t="log" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Записать</button>
+  <button role="tab" data-t="hist" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>История</button>
+  <button role="tab" data-t="graph" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 15l4-4 3 3 5-6"/></svg>Графики</button>
+  <button role="tab" data-t="data" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span id="data-lbl">Данные</span></button>
+</nav>
+
+<script>
+"use strict";
+const APP_VERSION="1.0";
+const GIST_DESC="Дневник зала — резервная копия";
+const GIST_FILE="gym-log.json";
+
+const EX={
+  legpress:{name:"Жим ногами",lo:10,hi:15,step:5},
+  bench:{name:"Жим штанги",lo:8,hi:12,step:2.5,note:"вес с грифом"},
+  row:{name:"Тяга к поясу",lo:10,hi:15,step:5},
+  hyper:{name:"Гиперэкстензия",lo:12,hi:15,step:2.5,note:"0 = без веса"},
+  raises:{name:"Махи гантелями",lo:12,hi:15,step:0.5,per:true},
+  plank:{name:"Планка",lo:30,hi:60,step:10,time:true},
+  legext:{name:"Разгибания ног",lo:12,hi:15,step:5},
+  legcurl:{name:"Сгибания ног",lo:12,hi:15,step:5},
+  dbpress:{name:"Жим гантелей 30°",lo:8,hi:12,step:1,per:true},
+  pulldown:{name:"Верхняя тяга",lo:8,hi:12,step:5},
+  facepull:{name:"Тяга к лицу",lo:15,hi:20,step:2.5},
+  shrugs:{name:"Шраги с гантелями",lo:12,hi:15,step:2,per:true},
+  sideplank:{name:"Боковая планка",lo:20,hi:40,step:10,time:true,note:"на каждую сторону"}
+};
+const DAYS={A:["legpress","bench","row","hyper","raises","plank"],B:["legext","legcurl","dbpress","pulldown","facepull","shrugs","sideplank"]};
+const MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+
+/* Тренировки из заметок (26.08–24.10.2026): [дата, вес тела, заметка, [[упр, подпись, заметка, [[кг, повт, RIR]...]]...]] */
+const SEED=[
+ ["2026-08-26",62.5,"",[["legpress","","",[[85,12,"2-3"],[85,10,"2"],[85,10,"2"]]],["bench","","",[[35,12,"2"],[35,8,"плечо съехало"],[35,12,"1"]]],["pulldown","Верхняя тяга широким","",[[30,12,"4"],[35,10,"2"],[35,10,"1"]]],["raises","","",[[10,12,"2"],[10,10,"0"],[8,10,"1-2"]]]]],
+ ["2026-09-02",60.3,"",[["legpress","Жим ногами широко","",[[85,14,"2"],[100,10,"1"],[100,8,"1"]]],["bench","","",[[35,12,"1"],[35,12,"1"],[37.5,10,"1"]]],["pulldown","Верхняя тяга широким","вавилон белый слева",[[35,8,"3"],[28,12,"1"],[35,7,"1"]]],["raises","","",[[10,10,"1-2"],[8,12,"1"]]]]],
+ ["2026-09-05",null,"",[["row","","вавилон красный",[[30,15,"3"],[35,12,"2"],[40,10,"1"]]],["legpress","Жим ногами узко","",[[70,15,"3"],[80,12,"2"],[90,10,"2"]]],["dbpress","","",[[10,15,"3"],[13,10,"2"],[13,10,"1"]]],["raises","","",[[8,null,""]]]]],
+ ["2026-09-12",63,"",[["bench","","",[[37.5,12,"2"],[40,10,"1"],[40,10,"0"]]],["pulldown","Вертикальная тяга, параллельные ручки","белый малина, другой тренажёр",[[30,15,"3+"],[35,12,""],[40,10,""]]]]],
+ ["2026-09-16",null,"",[["row","","вавилон красный",[[35,15,"2"],[40,12,"1-2"],[40,10,"1"]]],["legpress","Жим ногами узко","прервал",[[80,15,"2"]]],["dbpress","","на технику",[[12,12,"2"],[12,12,"1"]]],["raises","","",[[8,null,""]]]]],
+ ["2026-09-19",null,"Не очень",[["legext","","",[[25,15,"3"],[30,12,"2"],[35,11,"1"]]]]],
+ ["2026-09-26",62.5,"В норме",[["row","","вавилон красный",[[40,13,"2"],[40,12,"2"],[40,10,"2"]]],["legpress","Жим ногами узко","",[[85,null,"сбился"],[90,10,""],[95,8,""]]],["bench","","",[[40,12,"1-2"],[40,10,"1"]]]]],
+ ["2026-10-14",62.05,"В норме",[["row","","вавилон красный",[[35,15,"2"],[40,12,"1"],[40,10,"1"]]],["bench","","",[[35,10,"2"],[35,10,"1"]]],["raises","","",[[8,10,"2"],[8,10,"1"],[8,10,"0"]]]]],
+ ["2026-10-20",null,"",[["bench","","",[[35,12,"2"],[40,8,"1"],[40,null,"не посчитал"]]],["pulldown","Верхняя тяга широким","вавилон белый слева",[[28,13,"изи"],[35,8,"2"],[35,7,"1"]]],["legext","","",[[30,12,"3"],[35,10,""]]]]],
+ ["2026-10-24",61.7,"",[["row","","вавилон красный",[[35,15,"3"],[40,13,"2"],[45,10,"1"]]],["bench","","",[[35,null,"не посчитал"],[40,10,"2"],[40,10,"1"]]],["raises","","",[[8,12,"2"],[8.5,11,"1-2"],[8.5,10,"1"]]]]]
+];
+function seedWorkouts(){
+  return SEED.map(([date,bw,note,ents])=>{const t=Date.parse(date+"T12:00:00Z");return{
+    id:date+"_h1",date,day:null,bw,note,created:t,updated:t,
+    entries:ents.map(([ex,label,n,sets])=>({ex,label:label||undefined,note:n||undefined,sets:sets.map(([kg,reps,rir])=>({kg,reps,rir}))}))}});
+}
+
+/* ---------- Хранилище: IndexedDB + копия в localStorage ---------- */
+const LS_KEY="gymlog.state.v1", LS_TOKEN="gymlog.token";
+let _db=null;
+function idbOpen(){
+  if(_db)return Promise.resolve(_db);
+  return new Promise((res,rej)=>{let r;try{r=indexedDB.open("gymlog",1)}catch(e){rej(e);return}
+    r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+    r.onsuccess=()=>{_db=r.result;_db.onclose=()=>{_db=null};res(_db)};r.onerror=()=>rej(r.error)});
+}
+async function idbGet(k){const d=await idbOpen();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function idbSet(k,v){const d=await idbOpen();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+
+let S=null; // {workouts, deleted:{id:ts}, draft, meta:{lastBackup,lastSync,gistId,dirty,seeded}, updatedAt}
+let TOKEN="";
+let saveOk=true;
+function blank(){return{workouts:[],deleted:{},draft:null,meta:{lastBackup:null,lastSync:null,gistId:null,dirty:false,syncError:null},updatedAt:0}}
+async function load(){
+  let a=null,b=null;
+  try{a=JSON.parse(localStorage.getItem(LS_KEY)||"null")}catch(e){}
+  try{b=await idbGet("state")}catch(e){}
+  try{TOKEN=localStorage.getItem(LS_TOKEN)||""}catch(e){}
+  if(!TOKEN){try{TOKEN=(await idbGet("token"))||""}catch(e){}}
+  const pick=[a,b].filter(x=>x&&Array.isArray(x.workouts)).sort((x,y)=>(y.updatedAt||0)-(x.updatedAt||0))[0];
+  if(pick){S=Object.assign(blank(),pick);S.meta=Object.assign(blank().meta,pick.meta||{});S.deleted=S.deleted||{}}
+  else{S=blank();S.workouts=seedWorkouts();S.meta.seeded=true;await persist()}
+}
+async function persist(){
+  S.updatedAt=Date.now();
+  const json=JSON.stringify(S);let ok1=false,ok2=false;
+  try{localStorage.setItem(LS_KEY,json);ok1=true}catch(e){}
+  try{await idbSet("state",JSON.parse(json));ok2=true}catch(e){}
+  saveOk=ok1||ok2;
+  if(!saveOk)showTop();
+  return saveOk;
+}
+async function saveToken(t){TOKEN=t;try{t?localStorage.setItem(LS_TOKEN,t):localStorage.removeItem(LS_TOKEN)}catch(e){}try{await idbSet("token",t)}catch(e){}}
+let persistedGranted=null;
+async function askPersist(){try{if(navigator.storage&&navigator.storage.persist){persistedGranted=await navigator.storage.persisted();if(!persistedGranted)persistedGranted=await navigator.storage.persist()}}catch(e){}}
+
+/* ---------- Утилиты ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=v=>{if(v===null||v===undefined||v==="")return null;const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:null};
+const fmt=n=>n==null?"—":(Math.round(n*100)/100).toString().replace(".",",");
+const fdate=iso=>{const [y,m,d]=iso.split("-").map(Number);return `${d} ${MON[m-1]}`};
+const z2=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${z2(d.getMonth()+1)}-${z2(d.getDate())}`};
+const ago=ts=>{if(!ts)return"никогда";const d=Math.floor((Date.now()-ts)/86400000);if(d<=0)return"сегодня";if(d===1)return"вчера";return d+" дн. назад"};
+const sorted=()=>[...S.workouts].sort((a,b)=>(a.date+String(a.created).padStart(15,"0")).localeCompare(b.date+String(b.created).padStart(15,"0")));
+const kgTxt=(ex,kg)=>EX[ex]?.per?`2×${fmt(kg)} кг`:`${fmt(kg)} кг`;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const standalone=()=>window.navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;
+
+/* ---------- Прогрессия ---------- */
+function lastFor(key,skipId){
+  const s=sorted();
+  for(let i=s.length-1;i>=0;i--){if(s[i].id===skipId)continue;const e=(s[i].entries||[]).find(e=>e.ex===key&&(e.sets||[]).some(x=>num(x.reps)!=null));if(e)return{w:s[i],e}}
+  return null;
+}
+function status(key,skipId){
+  const ex=EX[key];const L=lastFor(key,skipId);
+  if(!L)return{kind:"none",chip:"Нет записей",last:""};
+  const sets=L.e.sets.filter(x=>num(x.reps)!=null);
+  if(ex.time){
+    const reps=sets.map(x=>num(x.reps));const done=sets.length>=2&&reps.every(r=>r>=ex.hi);
+    return{kind:done?"up":"keep",last:`${reps.join(" / ")} сек`,chip:done?"Усложни: держи дольше или возьми блин":`Держи до ${ex.hi} сек в каждом подходе`,next:null};
+  }
+  const top=Math.max(...sets.map(x=>num(x.kg)??0));
+  const reps=sets.filter(x=>(num(x.kg)??0)===top).map(x=>num(x.reps));
+  const done=reps.length>=2&&reps.every(r=>r>=ex.hi);
+  const nxt=Math.round((top+ex.step)*100)/100;
+  return{kind:done?"up":"keep",top,next:done?nxt:top,last:`${kgTxt(key,top)} × ${reps.join("/")}`,
+    chip:done?`Добавь вес: ${kgTxt(key,top)} → ${kgTxt(key,nxt)}`:`Набирай повторы до ${ex.hi} на ${kgTxt(key,top)}`};
+}
+function nextDay(){const s=sorted().filter(w=>w.day==="A"||w.day==="B");if(!s.length)return"A";return s[s.length-1].day==="A"?"B":"A"}
+
+/* ---------- Резервные копии ---------- */
+function exportObj(){return{app:"gym-log",version:1,exportedAt:new Date().toISOString(),workouts:S.workouts,deleted:S.deleted}}
+function merge(remote){
+  let added=0,updated=0,removed=0;
+  const byId=new Map(S.workouts.map(w=>[w.id,w]));
+  for(const [id,ts] of Object.entries(remote.deleted||{})){
+    if(!S.deleted[id]||S.deleted[id]<ts)S.deleted[id]=ts;
+    const w=byId.get(id);if(w&&(w.updated||0)<=ts){byId.delete(id);removed++}
+  }
+  for(const w of remote.workouts||[]){
+    if(!w||!w.id||!w.date||!Array.isArray(w.entries))continue;
+    if(S.deleted[w.id]&&S.deleted[w.id]>=(w.updated||0))continue;
+    const l=byId.get(w.id);
+    if(!l){byId.set(w.id,w);added++}else if((w.updated||0)>(l.updated||0)){byId.set(w.id,w);updated++}
+  }
+  S.workouts=[...byId.values()];
+  return{added,updated,removed};
+}
+function needBackup(){
+  if(TOKEN&&S.meta.gistId&&!S.meta.dirty)return false;
+  const last=Math.max(S.meta.lastBackup||0,TOKEN?(S.meta.lastSync||0):0);
+  return !last||Date.now()-last>7*86400000;
+}
+async function exportFile(){
+  const text=JSON.stringify(exportObj());
+  const name=`gym-log-${today()}.json`;
+  const file=new File([text],name,{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file]});S.meta.lastBackup=Date.now();await persist();return"Копия отправлена. Проверь, что файл сохранился в «Файлах» или в чате."}
+    catch(e){if(e&&e.name==="AbortError")return null;}
+  }
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  S.meta.lastBackup=Date.now();await persist();return"Файл копии создан.";
+}
+async function importText(text){
+  let obj;try{obj=JSON.parse(text)}catch(e){throw new Error("Это не файл копии дневника.")}
+  if(!obj||!Array.isArray(obj.workouts))throw new Error("В файле нет тренировок.");
+  const r=merge(obj);markDirty();await persist();syncSoon();return r;
+}
+
+/* ---------- Облачная копия: секретный Gist на GitHub ---------- */
+let syncing=false,syncTimer=null;
+async function gh(path,opts={}){
+  const r=await fetch("https://api.github.com"+path,{...opts,cache:"no-store",headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+TOKEN,"X-GitHub-Api-Version":"2022-11-28",...(opts.body?{"Content-Type":"application/json"}:{})}});
+  if(!r.ok){const e=new Error("http "+r.status);e.status=r.status;throw e}
+  return r.status===204?null:r.json();
+}
+async function gistContent(g){
+  const f=g.files&&g.files[GIST_FILE];if(!f)return null;
+  if(f.truncated&&f.raw_url){const r=await fetch(f.raw_url,{cache:"no-store"});return r.text()}
+  return f.content;
+}
+async function findGist(){
+  for(let page=1;page<=5;page++){const list=await gh(`/gists?per_page=100&page=${page}`);const g=list.find(x=>x.description===GIST_DESC&&x.files&&x.files[GIST_FILE]);if(g)return g.id;if(list.length<100)break}
+  return null;
+}
+async function syncNow(manual){
+  if(!TOKEN||syncing)return;
+  if(!navigator.onLine){if(manual)throw new Error("Нет интернета. Копия уйдёт сама, когда он появится.");return}
+  syncing=true;
+  try{
+    if(!S.meta.gistId)S.meta.gistId=await findGist();
+    if(S.meta.gistId){
+      let g;try{g=await gh("/gists/"+S.meta.gistId)}catch(e){if(e.status===404){S.meta.gistId=null}else throw e}
+      if(g){const txt=await gistContent(g);if(txt){try{merge(JSON.parse(txt))}catch(e){}}}
+    }
+    const body={files:{[GIST_FILE]:{content:JSON.stringify(exportObj())}}};
+    if(S.meta.gistId)await gh("/gists/"+S.meta.gistId,{method:"PATCH",body:JSON.stringify(body)});
+    else{const g=await gh("/gists",{method:"POST",body:JSON.stringify({description:GIST_DESC,public:false,...body})});S.meta.gistId=g.id}
+    S.meta.dirty=false;S.meta.lastSync=Date.now();S.meta.syncError=null;
+  }catch(e){
+    S.meta.syncError=e.status===401?"Токен не подходит или истёк. Создай новый.":e.status===403||e.status===404?"У токена нет доступа к Gist.":"Не получилось отправить, повторю позже.";
+    if(manual){await persist();throw new Error(S.meta.syncError)}
+  }finally{syncing=false;await persist();if(tab==="log"){renderStats();showTop()}else if(tab!=="data"||!manual)renderAll()}
+}
+function syncSoon(){clearTimeout(syncTimer);if(TOKEN)syncTimer=setTimeout(()=>syncNow(false),1500)}
+function markDirty(){S.meta.dirty=true}
+
+/* ---------- Отрисовка ---------- */
+let tab="prog",graphEx="bench",confirmDel=null,draft=null;
+function showTop(){
+  const el=$("#top-alert");let h="";
+  if(!saveOk)h=`<div class="alert"><b>Не удалось сохранить на телефоне.</b>Освободи место в памяти iPhone и сделай копию во вкладке «Данные».</div>`;
+  else if(!standalone())h=`<div class="alert"><b>Установи приложение на экран «Домой».</b><span>В Safari нажми «Поделиться» → «На экран „Домой“» и дальше открывай дневник только с иконки. Записи, сделанные в Safari, в приложение не попадут, и Safari может стереть их через 7 дней без захода.</span></div>`;
+  else if(needBackup()&&tab!=="data")h=`<div class="alert"><b>Пора сделать копию.</b><span>Последняя копия: ${ago(Math.max(S.meta.lastBackup||0,S.meta.lastSync||0))}.</span><div><button class="ghost" data-go="data" type="button">Открыть «Данные»</button></div></div>`;
+  el.innerHTML=h?h:"";el.style.marginBottom=h?"12px":"0";
+  const lbl=$("#data-lbl");if(lbl)lbl.classList.toggle("dot",needBackup());
+}
+function renderStats(){
+  const s=sorted();const bw=s.filter(w=>num(w.bw)!=null);
+  const lastBw=bw.length?num(bw[bw.length-1].bw):null;const firstBw=bw.length>1?num(bw[0].bw):null;
+  const cut=new Date();cut.setDate(cut.getDate()-28);const ci=`${cut.getFullYear()}-${z2(cut.getMonth()+1)}-${z2(cut.getDate())}`;
+  const n28=s.filter(w=>w.date>=ci).length;const delta=lastBw!=null&&firstBw!=null?lastBw-firstBw:null;
+  $("#stats").innerHTML=`
+    <div class="stat"><span class="label">Вес тела</span><b>${lastBw!=null?fmt(lastBw)+" кг":"—"}</b><small>${delta!=null?(delta>=0?"+":"")+fmt(delta)+" с "+fdate(bw[0].date):"взвешивайся раз в неделю"}</small></div>
+    <div class="stat"><span class="label">За 4 недели</span><b>${n28} / 8</b><small>тренировок из плана</small></div>
+    <div class="stat"><span class="label">Следующая</span><b>День ${nextDay()}</b><small>${s.length?"последняя "+fdate(s[s.length-1].date):"начни с дня A"}</small></div>`;
+}
+function renderProg(){
+  const nd=nextDay();
+  const card=d=>`<div class="card">
+    <div class="dayhead"><div class="dayttl"><span class="plate">${d}</span><h2>День ${d}</h2></div>${d===nd?'<span class="pill">следующая</span>':""}</div>
+    ${DAYS[d].map(k=>{const ex=EX[k];const st=status(k);return`<div class="ex">
+      <div class="nm">${esc(ex.name)}</div><div class="last num">${esc(st.last)}</div>
+      <div class="rng">${ex.time?`3 × ${ex.lo}–${ex.hi} сек`:`3 × ${ex.lo}–${ex.hi}`}${ex.note?" · "+ex.note:""}</div><div></div>
+      <span class="chip ${st.kind==="up"?"up":""}">${esc(st.chip)}</span></div>`}).join("")}
+  </div>`;
+  $("#v-prog").innerHTML=card(nd)+card(nd==="A"?"B":"A")+`<div class="card rule">
+    <h2 style="margin-bottom:8px">Как добавлять вес</h2>
+    <p>Работай в диапазоне повторов с запасом 1–2 повтора (RIR 1–2).</p>
+    <p>Когда во всех рабочих подходах сделал верх диапазона, в следующий раз добавь вес. Подсказка «Добавь вес» появится сама.</p>
+    <p>Разминочные подходы не записывай. Делай упражнение на одном и том же тренажёре; если тренажёр другой, напиши это в заметке.</p></div>`;
+}
+function newDraft(day,from){
+  const d={day,date:today(),bw:"",note:"",ex:{},editId:null,created:null};
+  if(from){d.date=from.date;d.bw=from.bw!=null?String(from.bw):"";d.note=from.note||"";d.editId=from.id;d.created=from.created}
+  DAYS[day].forEach(k=>{
+    const e=from&&(from.entries||[]).find(e=>e.ex===k);
+    if(e)d.ex[k]=e.sets.map(s=>({kg:s.kg!=null?String(s.kg):"",reps:s.reps!=null?String(s.reps):"",rir:s.rir||""}));
+    else{const st=status(k);const kg=EX[k].time||st.next==null?"":String(st.next);d.ex[k]=[0,1,2].map(()=>({kg,reps:"",rir:""}))}
+  });
+  return d;
+}
+function setRow(i,s,k){const t=EX[k].time;return`<div class="setrow" data-i="${i}"><span class="n">${i+1}</span>
+  <input class="kg" id="kg-${k}-${i}" inputmode="decimal" placeholder="${t?"—":"кг"}" value="${esc(s.kg)}" ${t?"disabled":""} aria-label="Вес, подход ${i+1}">
+  <input class="reps" id="reps-${k}-${i}" inputmode="numeric" placeholder="${t?"сек":"повт"}" value="${esc(s.reps)}" aria-label="Повторы, подход ${i+1}">
+  <input class="rir" id="rir-${k}-${i}" inputmode="decimal" placeholder="RIR" value="${esc(s.rir)}" aria-label="RIR, подход ${i+1}">
+  <button class="icon del" type="button" aria-label="Убрать подход">×</button></div>`}
+function renderLog(msg,isErr){
+  if(!draft)draft=S.draft||newDraft(nextDay());
+  const v=$("#v-log");const day=draft.day;
+  v.innerHTML=`<div class="card stack">
+    ${draft.editId?`<div class="alert"><b>Редактируешь тренировку ${fdate(draft.date)}.</b><div><button class="ghost" id="cancel-edit" type="button">Отменить изменения</button></div></div>`:""}
+    <div class="seg" role="group" aria-label="День">${["A","B"].map(d=>`<button type="button" data-day="${d}" aria-pressed="${d===day}">День ${d}</button>`).join("")}</div>
+    <div class="row2">
+      <label class="field"><span class="label">Дата</span><input type="date" id="f-date" value="${esc(draft.date)}"></label>
+      <label class="field"><span class="label">Вес тела, кг</span><input id="f-bw" inputmode="decimal" placeholder="необяз." value="${esc(draft.bw)}"></label>
+    </div>
+    <div class="small">Всё, что вводишь, сразу сохраняется на телефоне. Можно закрыть приложение посреди тренировки.</div></div>
+    ${DAYS[day].map(k=>{const ex=EX[k];const st=status(k,draft.editId);return`<div class="card exlog" data-ex="${k}">
+      <div class="top"><h2>${esc(ex.name)}</h2><span class="hint num">${ex.time?`${ex.lo}–${ex.hi} сек`:`${ex.lo}–${ex.hi} повт`}${ex.per?" · одна гантель":""}</span></div>
+      ${st.kind!=="none"?`<div class="hint ${st.kind==="up"?"up":""}">Прошлый раз: ${esc(st.last)}. ${esc(st.chip)}</div>`:""}
+      <div class="setrow hdr"><span></span><span>${ex.time?"":"кг"}</span><span>${ex.time?"сек":"повт"}</span><span>RIR</span><span></span></div>
+      ${draft.ex[k].map((s,i)=>setRow(i,s,k)).join("")}
+      <button type="button" class="addset">+ подход</button></div>`}).join("")}
+    <div class="card stack">
+      <label class="field"><span class="label">Заметка</span><textarea id="f-note" placeholder="самочувствие, другой тренажёр, что мешало">${esc(draft.note)}</textarea></label>
+      <button class="primary" id="save" type="button">${draft.editId?"Сохранить изменения":"Закончить и сохранить"}</button>
+      <div class="toast ${isErr?"err":""}" id="toast" role="status">${esc(msg||"")}</div>
+    </div>`;
+}
+function readDraft(){
+  if(!draft||tab!=="log")return;const v=$("#v-log");
+  const d=v.querySelector("#f-date");if(d)draft.date=d.value;
+  const b=v.querySelector("#f-bw");if(b)draft.bw=b.value;
+  const n=v.querySelector("#f-note");if(n)draft.note=n.value;
+  v.querySelectorAll(".exlog").forEach(c=>{draft.ex[c.dataset.ex]=[...c.querySelectorAll(".setrow[data-i]")].map(r=>({kg:r.querySelector(".kg").value,reps:r.querySelector(".reps").value,rir:r.querySelector(".rir").value}))});
+}
+let draftTimer=null;
+function saveDraftSoon(){clearTimeout(draftTimer);draftTimer=setTimeout(()=>{readDraft();S.draft=draft;persist()},300)}
+async function saveWorkout(){
+  readDraft();const day=draft.day;
+  const entries=DAYS[day].map(k=>({ex:k,sets:draft.ex[k].filter(s=>num(s.reps)!=null).map(s=>({kg:EX[k].time?null:num(s.kg),reps:num(s.reps),rir:String(s.rir||"").trim()}))})).filter(e=>e.sets.length);
+  if(!draft.date)return renderLog("Укажи дату тренировки.",true);
+  if(!entries.length)return renderLog("Запиши хотя бы один подход с повторами.",true);
+  const now=Date.now();
+  const w={id:draft.editId||draft.date+"_"+uid(),date:draft.date,day,bw:num(draft.bw),note:draft.note.trim(),entries,created:draft.created||now,updated:now};
+  S.workouts=S.workouts.filter(x=>x.id!==w.id);S.workouts.push(w);
+  S.draft=null;draft=null;markDirty();
+  const ok=await persist();syncSoon();
+  renderAll();renderLog(ok?"Тренировка сохранена.":"Не удалось сохранить. Освободи память телефона.",!ok);
+}
+function renderHist(){
+  const s=sorted().reverse();
+  if(!s.length){$("#v-hist").innerHTML=`<div class="card empty">Здесь появятся твои тренировки. Запиши первую во вкладке «Записать».</div>`;return}
+  $("#v-hist").innerHTML=s.map(w=>`<div class="card wk">
+    <div class="h"><span><span class="d">${fdate(w.date)}</span> <span class="muted num" style="font-size:12px">${w.date.slice(0,4)}</span></span>
+      <span style="display:flex;gap:6px;align-items:center">${w.day?`<span class="tag">День ${w.day}</span>`:""}${num(w.bw)!=null?`<span class="muted num" style="font-size:13px">${fmt(w.bw)} кг</span>`:""}</span></div>
+    ${w.note?`<div class="note">${esc(w.note)}</div>`:""}
+    <ul>${(w.entries||[]).map(e=>{const ex=EX[e.ex]||{};return`<li><span>${esc(e.label||ex.name||e.ex)}${e.note?` <span class="muted" style="font-size:12.5px">· ${esc(e.note)}</span>`:""}</span>
+      <span class="s">${(e.sets||[]).map(x=>{const kg=num(x.kg),r=num(x.reps);
+        const left=ex.time?"":(kg!=null?(ex.per?"2×":"")+fmt(kg):"");
+        return `${left}${left&&r!=null?"×":""}${r!=null?r+(ex.time?" с":""):""}${x.rir?` (${esc(x.rir)})`:""}`}).join(" · ")}</span></li>`}).join("")}</ul>
+    <div class="btns">${w.day?`<button class="ghost" data-edit="${esc(w.id)}" type="button">Изменить</button>`:""}<button class="ghost ${confirmDel===w.id?"danger":""}" data-del="${esc(w.id)}" type="button">${confirmDel===w.id?"Точно удалить?":"Удалить"}</button></div>
+  </div>`).join("");
+}
+function niceTicks(lo,hi,n=4){if(lo===hi){lo-=1;hi+=1}const raw=(hi-lo)/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const step=[1,2,2.5,5,10].map(m=>m*p).find(s=>s>=raw);const a=Math.floor(lo/step)*step,b=Math.ceil(hi/step)*step;const t=[];for(let v=a;v<=b+1e-9;v+=step)t.push(+v.toFixed(4));return t}
+function lineChart(pts,unit){
+  if(pts.length<2)return`<div class="empty">Нужно хотя бы две записи, чтобы построить график.</div>`;
+  const W=600,H=250,L=52,R=84,T=18,B=34;
+  const xs=pts.map(p=>p.t),ys=pts.map(p=>p.y);const ticks=niceTicks(Math.min(...ys),Math.max(...ys));
+  const y0=ticks[0],y1=ticks[ticks.length-1],x0=Math.min(...xs),x1=Math.max(...xs);
+  const X=t=>L+(x1===x0?0:(t-x0)/(x1-x0))*(W-L-R),Y=v=>T+(1-(v-y0)/(y1-y0))*(H-T-B);
+  const d=pts.map((p,i)=>`${i?"L":"M"}${X(p.t).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
+  const area=`${d}L${X(x1).toFixed(1)},${H-B}L${X(x0).toFixed(1)},${H-B}Z`;const last=pts[pts.length-1];
+  const months=[];{const s=new Date(x0);s.setDate(1);s.setMonth(s.getMonth()+1);for(let m=new Date(s);m.getTime()<=x1;m.setMonth(m.getMonth()+1))months.push(new Date(m))}
+  return`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="График">
+    ${ticks.map(v=>`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`).join("")}
+    ${months.map(m=>`<text x="${X(m.getTime())}" y="${H-8}" text-anchor="middle">1 ${MON[m.getMonth()]}</text>`).join("")}
+    <path class="ar" d="${area}" opacity=".7"/><path class="ln" d="${d}"/>
+    ${pts.slice(0,-1).map(p=>`<circle class="pt" cx="${X(p.t)}" cy="${Y(p.y)}" r="3.5"/>`).join("")}
+    <circle class="end" cx="${X(last.t)}" cy="${Y(last.y)}" r="5"/><text class="endlbl" x="${X(last.t)+9}" y="${Y(last.y)+4}">${fmt(last.y)}${unit}</text></svg>`;
+}
+function renderGraph(){
+  const s=sorted();const ts=iso=>new Date(iso+"T12:00:00").getTime();
+  const bw=s.filter(w=>num(w.bw)!=null).map(w=>({t:ts(w.date),y:num(w.bw)}));
+  const used=Object.keys(EX).filter(k=>!EX[k].time&&s.some(w=>(w.entries||[]).some(e=>e.ex===k)));
+  if(!used.includes(graphEx)&&used.length)graphEx=used[0];
+  const ep=[];s.forEach(w=>{const e=(w.entries||[]).find(e=>e.ex===graphEx);if(!e)return;const kgs=e.sets.filter(x=>num(x.reps)!=null&&num(x.kg)!=null).map(x=>num(x.kg));if(kgs.length)ep.push({t:ts(w.date),y:Math.max(...kgs)})});
+  $("#v-graph").innerHTML=`<div class="card stack"><div class="dayhead"><h2>Вес тела</h2><span class="hint">цель: +0,25–0,5 кг в неделю</span></div>${lineChart(bw," кг")}</div>
+  <div class="card stack"><h2>Рабочий вес</h2>
+    <label class="field"><span class="label">Упражнение</span><select id="g-ex">${used.map(k=>`<option value="${k}" ${k===graphEx?"selected":""}>${esc(EX[k].name)}</option>`).join("")}</select></label>
+    ${lineChart(ep,EX[graphEx]?.per?" ×2":" кг")}
+    <div class="hint">Самый тяжёлый подход за тренировку. Если линия стоит больше 3–4 недель, а повторы не растут, стоит добавить еды.</div></div>`;
+}
+function renderData(msg,isErr){
+  const lastCopy=Math.max(S.meta.lastBackup||0,TOKEN?(S.meta.lastSync||0):0);
+  const cloud=!!(TOKEN&&S.meta.gistId);
+  $("#v-data").innerHTML=`
+  <div class="alert ${needBackup()?"":"ok"}"><b>${needBackup()?"Копия устарела":"Данные под защитой"}</b>
+    <span>${cloud?(S.meta.dirty?"Есть изменения, которые ещё не в облаке. Уйдут сами, когда появится интернет.":"Облачная копия актуальна."):"Последняя копия файлом: "+ago(S.meta.lastBackup)+"."}</span></div>
+  <div class="card stack"><h2>Где хранятся записи</h2>
+    <dl class="kv">
+      <dt>На этом телефоне</dt><dd>${S.workouts.length} тренировок</dd>
+      <dt>Защита от очистки iOS</dt><dd>${persistedGranted===true?"включена":persistedGranted===false?"не дали":"нет данных"}</dd>
+      <dt>Режим</dt><dd>${standalone()?"приложение с экрана «Домой»":"вкладка Safari"}</dd>
+      <dt>Облако (GitHub)</dt><dd>${cloud?"обновлено "+ago(S.meta.lastSync):"не подключено"}</dd>
+    </dl>
+    ${S.meta.syncError&&TOKEN?`<div class="toast err">${esc(S.meta.syncError)}</div>`:""}
+  </div>
+  <div class="card stack"><h2>Копия файлом</h2>
+    <div class="small">Сохрани файл в «Файлы» → iCloud Drive или отправь себе в Telegram. Делай раз в неделю, приложение напомнит.</div>
+    <button class="primary" id="exp" type="button">Сделать копию</button>
+    <label class="secondary" style="text-align:center;display:block">Восстановить из файла<input id="imp" type="file" accept="application/json,.json" hidden></label>
+    <div class="small">При восстановлении записи не затираются: из файла добавятся только те, которых нет на телефоне.</div>
+  </div>
+  <div class="card stack"><h2>Облачная копия в GitHub</h2>
+    ${TOKEN?`<div class="small">Подключено. После каждой тренировки копия сама отправляется в секретный Gist «${esc(GIST_DESC)}», как только есть интернет. На новом телефоне вставь тот же токен, и все записи вернутся.</div>
+      <div class="btns"><button class="secondary" id="sync" type="button" style="flex:1">Синхронизировать сейчас</button><button class="ghost danger" id="unlink" type="button">${confirmDel==="__token"?"Точно отключить?":"Отключить"}</button></div>`
+    :`<div class="small">Копия будет обновляться сама, без твоих действий. Нужен токен GitHub с доступом только к Gist:
+      <ol><li>github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.</li>
+      <li>Expiration: выбери самый долгий срок. Account permissions → Gists: Read and write. Остальное не трогай.</li>
+      <li>Скопируй токен и вставь ниже.</li></ol></div>
+      <input id="tok" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="Токен GitHub">
+      <button class="primary" id="link" type="button">Подключить</button>`}
+  </div>
+  <div class="toast ${isErr?"err":""}" role="status">${esc(msg||"")}</div>
+  <div class="small" style="text-align:center">Версия ${APP_VERSION}. Не удаляй иконку с экрана «Домой»: вместе с ней iOS стирает данные приложения.</div>`;
+}
+function renderAll(){
+  if(!S)return;renderStats();showTop();
+  ["prog","log","hist","graph","data"].forEach(t=>{$("#v-"+t).hidden=t!==tab});
+  ({prog:renderProg,log:()=>renderLog(),hist:renderHist,graph:renderGraph,data:()=>renderData()})[tab]();
+}
+function go(t){readDraft();tab=t;confirmDel=null;document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t));renderAll();window.scrollTo(0,0)}
+
+/* ---------- События ---------- */
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-t]");if(b)go(b.dataset.t)});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)go(g.dataset.go)});
+$("#v-log").addEventListener("input",saveDraftSoon);
+$("#v-log").addEventListener("click",e=>{
+  const dayB=e.target.closest("[data-day]");
+  if(dayB){readDraft();if(dayB.dataset.day!==draft.day){const keep={date:draft.date,bw:draft.bw,note:draft.note,editId:draft.editId,created:draft.created};draft=Object.assign(newDraft(dayB.dataset.day),keep);S.draft=draft;persist()}renderLog();return}
+  if(e.target.closest("#cancel-edit")){draft=null;S.draft=null;persist();renderLog();return}
+  if(e.target.closest(".addset")){readDraft();const k=e.target.closest(".exlog").dataset.ex;const arr=draft.ex[k];arr.push({kg:(arr[arr.length-1]||{}).kg||"",reps:"",rir:""});S.draft=draft;persist();renderLog();return}
+  if(e.target.closest(".del")){readDraft();const k=e.target.closest(".exlog").dataset.ex;draft.ex[k].splice(+e.target.closest(".setrow").dataset.i,1);S.draft=draft;persist();renderLog();return}
+  if(e.target.closest("#save"))saveWorkout();
+});
+$("#v-hist").addEventListener("click",async e=>{
+  const ed=e.target.closest("[data-edit]");
+  if(ed){const w=S.workouts.find(x=>x.id===ed.dataset.edit);if(w){draft=newDraft(w.day,w);S.draft=draft;await persist();go("log")}return}
+  const b=e.target.closest("[data-del]");if(!b)return;const id=b.dataset.del;
+  if(confirmDel!==id){confirmDel=id;renderHist();return}
+  confirmDel=null;S.workouts=S.workouts.filter(w=>w.id!==id);S.deleted[id]=Date.now();markDirty();await persist();syncSoon();renderAll();
+});
+$("#v-graph").addEventListener("change",e=>{if(e.target.id==="g-ex"){graphEx=e.target.value;renderGraph()}});
+$("#v-data").addEventListener("click",async e=>{
+  if(e.target.closest("#exp")){try{const m=await exportFile();renderAll();if(m)renderData(m)}catch(err){renderData("Не получилось создать файл. Попробуй ещё раз.",true)}return}
+  if(e.target.closest("#link")){const t=$("#tok").value.trim();if(!t)return renderData("Вставь токен.",true);
+    if(!navigator.onLine)return renderData("Подключить можно только с интернетом.",true);
+    const prev=TOKEN;await saveToken(t);
+    try{await gh("/user");S.meta.gistId=null;await syncNow(true);renderData("Подключено. Облачная копия создана.")}
+    catch(err){await saveToken(prev);S.meta.syncError=null;await persist();renderAll();renderData(err.status===401?"Токен не подошёл. Проверь, что скопировал его целиком.":err.message&&!err.status?err.message:"Не получилось подключиться. Проверь доступ токена к Gist.",true)}return}
+  if(e.target.closest("#sync")){try{await syncNow(true);renderData("Готово: облако и телефон совпадают.")}catch(err){renderData(err.message,true)}return}
+  if(e.target.closest("#unlink")){if(confirmDel!=="__token"){confirmDel="__token";renderData();return}confirmDel=null;await saveToken("");S.meta.gistId=null;S.meta.syncError=null;await persist();renderAll();renderData("Облако отключено. Копия в GitHub осталась, её можно подключить снова.");return}
+});
+$("#v-data").addEventListener("change",async e=>{
+  if(e.target.id!=="imp"||!e.target.files[0])return;
+  try{const text=await e.target.files[0].text();const r=await importText(text);renderAll();renderData(`Готово: добавлено ${r.added}, обновлено ${r.updated}${r.removed?`, удалено ${r.removed}`:""}.`)}
+  catch(err){renderData(err.message||"Не удалось прочитать файл.",true)}
+});
+window.addEventListener("online",()=>{if(S&&S.meta.dirty)syncNow(false)});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&S){readDraft();if(draft&&tab==="log"){S.draft=draft}persist()}else if(S&&S.meta.dirty)syncNow(false)});
+
+/* ---------- Запуск ---------- */
+(async()=>{
+  await load();
+  draft=S.draft||null;
+  renderAll();
+  await askPersist();
+  if(tab==="data")renderData();
+  if(TOKEN)syncNow(false);
+  if("serviceWorker" in navigator){try{await navigator.serviceWorker.register("sw.js")}catch(e){}}
+})();
+</script>
+</body>
+</html>
