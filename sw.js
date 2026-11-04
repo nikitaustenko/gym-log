@@ -1,6 +1,6 @@
 // Офлайн-режим: приложение целиком лежит в кэше телефона.
 // При новой версии поменяй CACHE (например, gymlog-v2) — обновление подтянется при следующем запуске с интернетом.
-const CACHE = "gymlog-v2";
+const CACHE = "gymlog-v3";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
