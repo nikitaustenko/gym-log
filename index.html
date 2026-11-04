@@ -133,6 +133,48 @@ textarea{resize:vertical;min-height:48px}
 .kv dd{margin:0;font-weight:600;text-align:right;overflow-wrap:anywhere}
 .small{font-size:13px;color:var(--muted)}
 .small ol{margin:6px 0 0;padding-left:20px;display:grid;gap:4px}
+.exlink{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
+.exlink::after{content:"\00a0›";color:var(--muted);font-weight:600}
+.setrow .rir{align-self:stretch;font:600 16px var(--f-num);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:0 2px;width:100%;min-width:0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-appearance:none;appearance:none}
+.setrow .rir.empty{font:500 13px var(--f-body);color:var(--muted)}
+.setrow .rir[aria-expanded="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.rirbar{display:grid;gap:6px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:8px}
+.rirbar .cap{font-size:12.5px;color:var(--muted);padding:0 2px}
+.rirbar .chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.rirbar button{font:700 17px var(--f-num);min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;padding:0;-webkit-appearance:none;appearance:none}
+.rirbar button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg.sm button{font-size:14px;padding:7px}
+.tag.go{background:var(--go-soft);color:var(--go)}
+.stats.in .stat{background:var(--sunk);border-color:transparent}
+.stat b.up{color:var(--go)}
+.pace{display:grid;gap:2px;font-size:14px;border-radius:10px;padding:8px 10px;background:var(--sunk)}
+.pace b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pace.ok{background:var(--go-soft)}
+.pace.warn{background:var(--warn-soft)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.lg{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.lg.pr{background:var(--go)}
+.lg.goal{width:18px;height:0;border-radius:0;border-top:2px dashed var(--go);vertical-align:3px}
+.readout{display:grid;gap:4px;background:var(--sunk);border-radius:10px;padding:8px 10px;font-size:14px}
+.readout .rh{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.readout .s,.exh .s{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 14px}
+.exh{list-style:none;margin:0;padding:0;display:grid}
+.exh li{display:grid;gap:3px;padding:9px 0;border-top:1px solid var(--line)}
+.exh li:first-child{border-top:0;padding-top:0}
+.exh .hh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.exh .hv{font-size:14px;font-weight:700}
+.dlt{font-size:12px;font-weight:600}
+.dlt.up{color:var(--go)}
+.dlt.down{color:var(--muted)}
+.chart.tap{cursor:pointer;touch-action:manipulation}
+.chart .pt.pr{fill:var(--go);stroke:var(--go)}
+.chart .end.pr{fill:var(--go)}
+.chart .goal{fill:none;stroke:var(--go);stroke-width:2;stroke-dasharray:7 6}
+.chart .selln{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:3 4}
+.chart .selpt{fill:none;stroke:var(--ink);stroke-width:2}
+.sheet{position:fixed;inset:0;z-index:30;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet-bar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.sheet-body{max-width:640px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(16px,env(safe-area-inset-left,0px))}
 @media (max-width:360px){.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}}
 </style>
 </head>
@@ -161,9 +203,14 @@ textarea{resize:vertical;min-height:48px}
   <button role="tab" data-t="data" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span id="data-lbl">Данные</span></button>
 </nav>
 
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-ttl">
+  <div class="sheet-bar"><h2 id="sheet-ttl">Упражнение</h2><button type="button" class="ghost" id="sheet-x">Закрыть</button></div>
+  <div class="sheet-body stack" id="sheet-body"></div>
+</div>
+
 <script>
 "use strict";
-const APP_VERSION="2.0";
+const APP_VERSION="2.1";
 const GIST_DESC="Дневник зала — резервная копия";
 const GIST_FILE="gym-log.json";
 
@@ -263,10 +310,10 @@ const sorted=()=>[...S.workouts].sort((a,b)=>(a.date+String(a.created).padStart(
 // Подход коротко: «40×10» = кг × повторы, «45 с» = время. У гантелей — вес одной гантели, без «2×», чтобы не путать с повторами.
 const setTxt=(ex,kg,reps)=>{const r=reps==null?"?":fmt(reps);return EX[ex]?.time?`${r} с`:`${kg==null?"?":fmt(kg)}×${r}`};
 const kgIn=kg=>kg==null?"":String(kg).replace(".",",");
-// RIR из записи: «2», «1-2» → 1.5, «3+» → 3, «изи» → 4, «отказ» → 0; пояснения вроде «не посчитал» → null
+// RIR из записи: «2», «1-2» → 1.5, «3+» (кнопка «больше трёх») → 4, «изи» → 4, «отказ» → 0; пояснения вроде «не посчитал» → null
 function rirNum(v){
   const s=String(v??"").trim().toLowerCase().replace(/,/g,".");if(!s)return null;
-  if(/изи|легк|easy/.test(s))return 4;if(/отказ/.test(s))return 0;
+  if(/^3\s*\+$/.test(s)||/изи|легк|easy/.test(s))return 4;if(/отказ/.test(s))return 0;
   const m=s.match(/^(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*\+?$/);if(!m)return null;
   return m[2]!=null?(+m[1]+ +m[2])/2:+m[1];
 }
@@ -327,7 +374,7 @@ function planWhy(key,P){ // пояснения только для особых 
   let n=by("up");if(n.length)out.push(w(n)+`дошёл до ${ex.hi} — вес выше. Дальше снова по +1 повтору.`);
   n=by("top");if(n.length)out.push(w(n)+`уже ${ex.hi} с — пора усложнить (блин или сложнее вариант).`);
   n=by("hold");if(n.length)out.push(w(n)+(R>1?`в прошлый раз в запасе было меньше ${R} повторов — повтори то же.`:"в прошлый раз был отказ — повтори то же, без прибавки."));
-  n=by("easy");if(n.length)out.push(w(n)+`было легко (RIR ${R+2}+) — +2 повтора.`);
+  n=by("easy");if(n.length)out.push(w(n)+`было легко (RIR ${R>1?"3+":"3 или 3+"}) — +2 повтора.`);
   n=by("new");if(n.length)out.push(w(n)+"повторы не записаны — цель с низа диапазона.");
   return out;
 }
@@ -413,7 +460,8 @@ function syncSoon(){clearTimeout(syncTimer);if(TOKEN)syncTimer=setTimeout(()=>sy
 function markDirty(){S.meta.dirty=true}
 
 /* ---------- Отрисовка ---------- */
-let tab="prog",graphEx="bench",confirmDel=null,draft=null;
+let tab="prog",graphEx="bench",confirmDel=null,draft=null,exMetric="e1",sheetEx=null;
+const sel={graph:null,sheet:null,bw:null}; // выбранная точка на графиках; null — последняя
 function showTop(){
   const el=$("#top-alert");let h="";
   if(!saveOk)h=`<div class="alert"><b>Не удалось сохранить на телефоне.</b>Освободи место в памяти iPhone и сделай копию во вкладке «Данные».</div>`;
@@ -441,16 +489,16 @@ function renderProg(){
   const card=d=>`<div class="card">
     <div class="dayhead"><div class="dayttl"><span class="plate">${d}</span><h2>День ${d}</h2></div>${d===nd?'<span class="pill">следующая</span>':""}</div>
     ${DAYS[d].map(k=>{const ex=EX[k];const P=plan(k);return`<div class="ex">
-      <div class="nm">${esc(ex.name)}</div><div class="last muted">${P?fdate(P.date):""}</div>
+      <div class="nm"><button type="button" class="exlink" data-exh="${k}">${esc(ex.name)}</button></div><div class="last muted">${P?fdate(P.date):""}</div>
       <div class="rng">${ex.sets||3} подхода · ${ex.lo}–${ex.hi} ${ex.time?"сек":"повт"}${ex.per?" · вес одной гантели":""}${(ex.res??1)>1?` · запас ${ex.res}–${ex.res+1}`:""}${ex.note?" · "+esc(ex.note):""}${!P&&ex.first?" · "+esc(ex.first):""}</div>
       ${P?planHtml(k,P):`<span class="chip">Нет записей: ${ex.time?`держи ${ex.lo}–${ex.hi} сек без отказа`:`подбери вес на ${ex.lo}–${ex.hi} с запасом 2–3 повтора`}</span>`}</div>`}).join("")}
   </div>`;
   $("#v-prog").innerHTML=card(nd)+card(nd==="A"?"B":"A")+`<div class="card rule">
     <h2 style="margin-bottom:8px">Как прибавлять</h2>
-    <p>Каждый подход сравнивается с тем же подходом прошлой тренировки. Цель на сегодня уже посчитана: во вкладке «Записать» она после «→», вес подставлен.</p>
-    <p><b>Обычный шаг:</b> тот же вес, +1 повтор. Было легко (RIR 3+) — +2.</p>
+    <p>Каждый подход сравнивается с тем же подходом прошлой тренировки. Цель на сегодня уже посчитана: во вкладке «Записать» она после «→», вес подставлен. RIR — сколько ещё повторов мог сделать: выбирай кнопками 0 · 1 · 2 · 3 · 3+.</p>
+    <p><b>Обычный шаг:</b> тот же вес, +1 повтор. Было легко (RIR 3 или 3+) — +2.</p>
     <p><b>Дошёл до верха диапазона:</b> следующий вес (штанга +2,5 кг, тренажёр +5, гантели на шаг тяжелее). Повторов станет меньше — дальше снова по +1.</p>
-    <p><b>Был отказ (RIR 0):</b> повтори то же. Оставляй 1–2 повтора в запасе — для здоровья и роста этого хватает. В жиме ногами и румынской тяге держи запас 2–3: если осталось меньше 2, цель та же.</p>
+    <p><b>Был отказ (RIR 0):</b> повтори то же. Оставляй 1–2 повтора в запасе — для здоровья и роста этого хватает. В жиме ногами и румынской тяге держи запас 2–3: если осталось меньше 2, цель та же, а +2 повтора — только при «3+».</p>
     <p>Не вышло — не страшно: следующая цель посчитается от того, что сделал. Разминку не записывай; другой тренажёр отметь в заметке.</p>
     <p class="small">Основа: ACSM — +2–10% веса, когда делаешь на 1–2 повтора больше нужного; прибавлять повторы так же полезно, как вес (Plotkin и др., 2022).</p></div>
   <div class="card rule">
@@ -488,7 +536,7 @@ function setRow(i,s,k,P){const t=EX[k].time;const ref=s.ref===undefined?i:s.ref;
   <span class="pv num">${p?`<span class="was">${setTxt(k,p.kg,p.reps)}</span><span class="to k-${g.kind}">→ ${setTxt(k,g.kg,g.reps)}</span>`:`<span class="was">—</span>`}</span>
   <input class="kg" id="kg-${k}-${i}" inputmode="decimal" placeholder="${t?"—":"кг"}" value="${esc(s.kg)}" ${t?"disabled":""} aria-label="${EX[k].per?"Вес одной гантели":"Вес"}, подход ${i+1}">
   <input class="reps" id="reps-${k}-${i}" inputmode="numeric" placeholder="${t?"сек":"повт"}" value="${esc(s.reps)}" aria-label="Повторы, подход ${i+1}">
-  <input class="rir" id="rir-${k}-${i}" inputmode="decimal" placeholder="RIR" value="${esc(s.rir)}" aria-label="RIR, подход ${i+1}">
+  <button type="button" class="rir${String(s.rir??"").trim()?"":" empty"}" id="rir-${k}-${i}" data-v="${esc(s.rir)}" aria-expanded="false" aria-label="Запас повторов (RIR), подход ${i+1}">${String(s.rir??"").trim()?esc(s.rir):"RIR"}</button>
   <button class="icon del" type="button" aria-label="Убрать подход">×</button></div>`}
 function renderLog(msg,isErr){
   if(!draft)draft=S.draft||newDraft(nextDay());
@@ -502,7 +550,7 @@ function renderLog(msg,isErr){
     </div>
     <div class="small">Всё, что вводишь, сразу сохраняется на телефоне. Можно закрыть приложение посреди тренировки.</div></div>
     ${draftKeys(draft).map(k=>{const ex=EX[k];const P=plan(k,draft.editId);const why=P?planWhy(k,P):[];return`<div class="card exlog" data-ex="${k}">
-      <div class="top"><h2>${esc(ex.name)}</h2><span class="hint num">${ex.lo}–${ex.hi} ${ex.time?"сек":"повт"}</span></div>
+      <div class="top"><h2><button type="button" class="exlink" data-exh="${k}">${esc(ex.name)}</button></h2><span class="hint num">${ex.lo}–${ex.hi} ${ex.time?"сек":"повт"}</span></div>
       <div class="hint">${P?`Прошлый раз ${fdate(P.date)}${P.label?" · "+esc(P.label):""}${P.note?" · "+esc(P.note):""}`:`Первый раз: ${ex.time?`держи ${ex.lo}–${ex.hi} сек без отказа`:`подбери вес на ${ex.lo}–${ex.hi} с запасом 2–3 повтора`}`}${ex.per?` · <b class="per">вес одной гантели</b>`:""}${ex.note?" · "+esc(ex.note):""}${!P&&ex.first?" · "+esc(ex.first):""}</div>
       <div class="setrow hdr"><span></span><span class="pvh">было → цель</span><span>${ex.time?"":"кг"}</span><span>${ex.time?"сек":"повт"}</span><span>RIR</span><span></span></div>
       ${draft.ex[k].map((s,i)=>setRow(i,s,k,P)).join("")}
@@ -519,10 +567,27 @@ function readDraft(){
   const d=v.querySelector("#f-date");if(d)draft.date=d.value;
   const b=v.querySelector("#f-bw");if(b)draft.bw=b.value;
   const n=v.querySelector("#f-note");if(n)draft.note=n.value;
-  v.querySelectorAll(".exlog").forEach(c=>{draft.ex[c.dataset.ex]=[...c.querySelectorAll(".setrow[data-i]")].map(r=>({kg:r.querySelector("input.kg").value,reps:r.querySelector("input.reps").value,rir:r.querySelector("input.rir").value,ref:r.dataset.ref===""?null:+r.dataset.ref}))});
+  v.querySelectorAll(".exlog").forEach(c=>{draft.ex[c.dataset.ex]=[...c.querySelectorAll(".setrow[data-i]")].map(r=>({kg:r.querySelector("input.kg").value,reps:r.querySelector("input.reps").value,rir:r.querySelector(".rir").dataset.v||"",ref:r.dataset.ref===""?null:+r.dataset.ref}))});
 }
 let draftTimer=null;
 function saveDraftSoon(){clearTimeout(draftTimer);draftTimer=setTimeout(()=>{readDraft();S.draft=draft;persist()},300)}
+/* Запас повторов (RIR) — кнопками 0 · 1 · 2 · 3 · 3+ под подходом; нажал выбранную ещё раз — стёр */
+const RIR_OPTS=["0","1","2","3","3+"];
+function closeRir(){document.querySelectorAll("#v-log .rirbar").forEach(b=>b.remove());document.querySelectorAll('#v-log button.rir[aria-expanded="true"]').forEach(b=>b.setAttribute("aria-expanded","false"))}
+function toggleRir(btn){
+  const row=btn.closest(".setrow"),open=btn.getAttribute("aria-expanded")==="true";closeRir();if(open)return;
+  const a=document.activeElement,kb=!!(a&&a.tagName==="INPUT");if(kb)a.blur(); // спрятать клавиатуру, чтобы кнопки было видно
+  const v=(btn.dataset.v||"").trim();
+  row.insertAdjacentHTML("afterend",`<div class="rirbar" role="group" aria-label="Запас повторов, подход ${+row.dataset.i+1}"><span class="cap">Сколько ещё повторов мог сделать? 0 — отказ</span><div class="chips">${RIR_OPTS.map(o=>`<button type="button" data-rir="${o}" aria-pressed="${o===v}">${o}</button>`).join("")}</div></div>`);
+  btn.setAttribute("aria-expanded","true");
+  setTimeout(()=>{const bar=row.nextElementSibling;if(!bar||!bar.classList.contains("rirbar"))return;const lim=$("#tabs").getBoundingClientRect().top-8,r=bar.getBoundingClientRect();if(r.bottom>lim)window.scrollBy({top:r.bottom-lim,behavior:"smooth"})},kb?350:0);
+}
+function pickRir(ch){
+  const btn=ch.closest(".rirbar").previousElementSibling.querySelector("button.rir");
+  const v=ch.dataset.rir===(btn.dataset.v||"").trim()?"":ch.dataset.rir;
+  btn.dataset.v=v;btn.textContent=v||"RIR";btn.classList.toggle("empty",!v);
+  closeRir();readDraft();S.draft=draft;persist();
+}
 async function saveWorkout(){
   readDraft();const day=draft.day;
   const entries=draftKeys(draft).map(k=>({ex:k,sets:draft.ex[k].filter(s=>num(s.reps)!=null).map(s=>({kg:EX[k].time?null:num(s.kg),reps:num(s.reps),rir:String(s.rir||"").trim()}))})).filter(e=>e.sets.length);
@@ -538,11 +603,11 @@ async function saveWorkout(){
 function renderHist(){
   const s=sorted().reverse();
   if(!s.length){$("#v-hist").innerHTML=`<div class="card empty">Здесь появятся твои тренировки. Запиши первую во вкладке «Записать».</div>`;return}
-  $("#v-hist").innerHTML=s.map(w=>`<div class="card wk">
+  $("#v-hist").innerHTML=`<div class="small" style="padding:0 2px">Нажми на название упражнения — откроются его график и все записи.</div>`+s.map(w=>`<div class="card wk">
     <div class="h"><span><span class="d">${fdate(w.date)}</span> <span class="muted num" style="font-size:12px">${w.date.slice(0,4)}</span></span>
       <span style="display:flex;gap:6px;align-items:center">${w.day?`<span class="tag">День ${w.day}</span>`:""}${num(w.bw)!=null?`<span class="muted num" style="font-size:13px">${fmt(w.bw)} кг</span>`:""}</span></div>
     ${w.note?`<div class="note">${esc(w.note)}</div>`:""}
-    <ul>${(w.entries||[]).map(e=>{const ex=EX[e.ex]||{};return`<li><span>${esc(e.label||ex.name||e.ex)}${ex.per?` <span class="muted" style="font-size:12.5px">· кг на гантель</span>`:""}${e.note?` <span class="muted" style="font-size:12.5px">· ${esc(e.note)}</span>`:""}</span>
+    <ul>${(w.entries||[]).map(e=>{const ex=EX[e.ex]||{};return`<li><span>${EX[e.ex]?`<button type="button" class="exlink" data-exh="${esc(e.ex)}">${esc(e.label||ex.name||e.ex)}</button>`:esc(e.label||ex.name||e.ex)}${ex.per?` <span class="muted" style="font-size:12.5px">· кг на гантель</span>`:""}${e.note?` <span class="muted" style="font-size:12.5px">· ${esc(e.note)}</span>`:""}</span>
       <span class="s">${(e.sets||[]).map(x=>{const kg=num(x.kg),r=num(x.reps),rt=rirTxt(x.rir);
         const main=ex.time?`${r==null?"?":fmt(r)} с`:`${kg==null?"?":fmt(kg)} кг × ${r==null?"?":fmt(r)}`;
         return`<span class="st">${main}${rt?` <small>${esc(rt)}</small>`:""}</span>`}).join("")}</span></li>`}).join("")}</ul>
@@ -550,34 +615,145 @@ function renderHist(){
   </div>`).join("");
 }
 function niceTicks(lo,hi,n=4){if(lo===hi){lo-=1;hi+=1}const raw=(hi-lo)/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const step=[1,2,2.5,5,10].map(m=>m*p).find(s=>s>=raw);const a=Math.floor(lo/step)*step,b=Math.ceil(hi/step)*step;const t=[];for(let v=a;v<=b+1e-9;v+=step)t.push(+v.toFixed(4));return t}
-function lineChart(pts,unit){
+function lineChart(pts,unit,o={}){ // pts: [{t,y,pr}]; o: pr — отметить рекорды, sel — выбранная точка, goal — пунктир цели [{t,y},{t,y}], tap — график можно нажать, fmt — формат подписи
   if(pts.length<2)return`<div class="empty">Нужно хотя бы две записи, чтобы построить график.</div>`;
-  const W=600,H=250,L=52,R=84,T=18,B=34;
-  const xs=pts.map(p=>p.t),ys=pts.map(p=>p.y);const ticks=niceTicks(Math.min(...ys),Math.max(...ys));
+  const W=600,H=250,L=52,R=84,T=18,B=34,F=o.fmt||fmt;
+  const xs=pts.map(p=>p.t),ys=pts.map(p=>p.y).concat(o.goal?o.goal.map(g=>g.y):[]);const ticks=niceTicks(Math.min(...ys),Math.max(...ys));
   const y0=ticks[0],y1=ticks[ticks.length-1],x0=Math.min(...xs),x1=Math.max(...xs);
   const X=t=>L+(x1===x0?0:(t-x0)/(x1-x0))*(W-L-R),Y=v=>T+(1-(v-y0)/(y1-y0))*(H-T-B);
   const d=pts.map((p,i)=>`${i?"L":"M"}${X(p.t).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
   const area=`${d}L${X(x1).toFixed(1)},${H-B}L${X(x0).toFixed(1)},${H-B}Z`;const last=pts[pts.length-1];
   const months=[];{const s=new Date(x0);s.setDate(1);s.setMonth(s.getMonth()+1);for(let m=new Date(s);m.getTime()<=x1;m.setMonth(m.getMonth()+1))months.push(new Date(m))}
-  return`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="График">
+  const iso=t=>{const q=new Date(t);return`${q.getFullYear()}-${z2(q.getMonth()+1)}-${z2(q.getDate())}`};
+  const xl=months.length?months.map(m=>`<text x="${X(m.getTime())}" y="${H-8}" text-anchor="middle">1 ${MON[m.getMonth()]}</text>`).join("")
+    :`<text x="${L}" y="${H-8}">${fdate(iso(x0))}</text>${x1>x0?`<text x="${W-R}" y="${H-8}" text-anchor="end">${fdate(iso(x1))}</text>`:""}`;
+  const sp=o.sel!=null&&pts[o.sel]?pts[o.sel]:null,pr=p=>o.pr&&p.pr?" pr":"";
+  return`<svg class="chart${o.tap?" tap":""}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label||"График")}"${o.tap?` data-tap="${o.tap}" data-xs="${pts.map(p=>X(p.t).toFixed(1)).join(",")}"`:""}>
     ${ticks.map(v=>`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`).join("")}
-    ${months.map(m=>`<text x="${X(m.getTime())}" y="${H-8}" text-anchor="middle">1 ${MON[m.getMonth()]}</text>`).join("")}
-    <path class="ar" d="${area}" opacity=".7"/><path class="ln" d="${d}"/>
-    ${pts.slice(0,-1).map(p=>`<circle class="pt" cx="${X(p.t)}" cy="${Y(p.y)}" r="3.5"/>`).join("")}
-    <circle class="end" cx="${X(last.t)}" cy="${Y(last.y)}" r="5"/><text class="endlbl" x="${X(last.t)+9}" y="${Y(last.y)+4}">${fmt(last.y)}${unit}</text></svg>`;
+    ${xl}
+    <path class="ar" d="${area}" opacity=".7"/>
+    ${o.goal?`<path class="goal" d="M${X(o.goal[0].t).toFixed(1)},${Y(o.goal[0].y).toFixed(1)}L${X(o.goal[1].t).toFixed(1)},${Y(o.goal[1].y).toFixed(1)}"/>`:""}
+    <path class="ln" d="${d}"/>
+    ${sp?`<line class="selln" x1="${X(sp.t)}" x2="${X(sp.t)}" y1="${T}" y2="${H-B}"/>`:""}
+    ${pts.slice(0,-1).map(p=>`<circle class="pt${pr(p)}" cx="${X(p.t)}" cy="${Y(p.y)}" r="${pr(p)?4.5:3.5}"/>`).join("")}
+    <circle class="end${pr(last)}" cx="${X(last.t)}" cy="${Y(last.y)}" r="5"/>
+    ${sp?`<circle class="selpt" cx="${X(sp.t)}" cy="${Y(sp.y)}" r="9"/>`:""}
+    <text class="endlbl" x="${X(last.t)+9}" y="${Y(last.y)+4}">${F(last.y)}${unit}</text></svg>`;
+}
+
+/* ---------- Прогресс по упражнению: сила, рекорды, все записи ---------- */
+const DAY=864e5;
+const tsOf=iso=>new Date(iso+"T12:00:00").getTime();
+const f1=v=>fmt(Math.round(v*10)/10);
+const yr=iso=>iso.slice(0,4)!==today().slice(0,4)?` <span class="muted num" style="font-size:12px">${iso.slice(0,4)}</span>`:"";
+const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
+const MN={e1:"Сила",kg:"Рабочий вес",reps:"Повторы",time:"Время"};
+const metricsFor=k=>EX[k].time?["time"]:EX[k].bw?["reps","kg"]:["e1","kg"];
+const mUnit=m=>m==="time"?" с":m==="reps"?" повт":" кг";
+const mNum=(m,v)=>m==="e1"?f1(v):fmt(v);
+const usedEx=()=>{const s=sorted();return Object.keys(EX).filter(k=>s.some(w=>(w.entries||[]).some(e=>e.ex===k&&(e.sets||[]).some(x=>num(x.reps)!=null))))};
+function exSeries(k){ // тренировки с этим упражнением, от старых к новым: {w,date,t,sets:[{kg,reps,rir,rn,e1}],label,note}
+  const ex=EX[k],out=[];
+  sorted().forEach(w=>{
+    const es=(w.entries||[]).filter(e=>e.ex===k);
+    const sets=[].concat(...es.map(e=>e.sets||[])).map(x=>({kg:ex.time?null:num(x.kg),reps:num(x.reps),rir:String(x.rir??"").trim()})).filter(x=>x.reps!=null);
+    if(!sets.length)return;
+    sets.forEach(x=>{x.rn=rirNum(x.rir);x.e1=!ex.time&&!ex.bw&&x.kg>0?e1rm(x.kg,x.reps,x.rn):null});
+    out.push({w,date:w.date,t:tsOf(w.date),sets,label:es.map(e=>e.label).find(Boolean)||"",note:es.map(e=>e.note).filter(Boolean).join(" · ")});
+  });
+  return out;
+}
+function exPoints(rows,m){ // точка на тренировку — лучший подход по метрике; pr — побил прежний рекорд
+  let mx=-Infinity;
+  return rows.map(r=>{let b=null;
+    r.sets.forEach(s=>{const v=m==="e1"?s.e1:m==="kg"?s.kg:s.reps;if(v!=null&&(!b||v>b.y||(v===b.y&&s.reps>b.best.reps)))b={y:v,best:s}});
+    return b&&{t:r.t,y:b.y,best:b.best,r}}).filter(Boolean).map((p,i)=>{p.pr=i>0&&p.y>mx+1e-9;mx=Math.max(mx,p.y);return p});
+}
+const setsHtml=(k,sets,long)=>sets.map(x=>`<span class="st">${EX[k].time?`${fmt(x.reps)} с`:long?`${x.kg==null?"?":fmt(x.kg)} кг × ${fmt(x.reps)}`:setTxt(k,x.kg,x.reps)}${x.rir?` <small>${esc(rirTxt(x.rir))}</small>`:""}</span>`).join("");
+function exView(k,ctx){ // {chart, hist}: итоги, график и выбранная тренировка + карточка со всеми записями
+  const ex=EX[k],rows=exSeries(k);
+  if(!rows.length)return{chart:`<div class="empty">Записей пока нет. Сохрани тренировку с этим упражнением — здесь появятся график и все подходы.</div>`,hist:""};
+  const ms=metricsFor(k),m=ms.includes(exMetric)?exMetric:ms[0],pts=exPoints(rows,m),u=mUnit(m);
+  const seg=ms.length>1?`<div class="seg sm" role="group" aria-label="Что показать">${ms.map(x=>`<button type="button" data-metric="${x}" aria-pressed="${x===m}">${MN[x]}</button>`).join("")}</div>`:"";
+  let chart=seg;
+  if(!pts.length)chart+=`<div class="empty">Нет подходов с весом.</div>`;
+  else{
+    const last=pts[pts.length-1],best=pts.reduce((a,p)=>p.y>a.y+1e-9?p:a,pts[0]);
+    let base=null;pts.forEach(p=>{if(p.t<=last.t-28*DAY)base=p});const lbl=base?"За месяц":"С "+fdate(pts[0].r.date);if(!base)base=pts[0];
+    const dv=base!==last?last.y-base.y:null;
+    const dTxt=dv==null?"—":Math.abs(dv)<0.05?"±0"+u:(dv>0?"+":"−")+mNum(m,Math.abs(dv))+u;
+    const pct=dv==null?"нужна ещё запись":base.y>0&&(m==="e1"||m==="kg")&&Math.abs(dv)>=0.05?`${dv>0?"+":"−"}${Math.abs(Math.round(dv/base.y*100))} %`:"";
+    const si=sel[ctx]!=null&&sel[ctx]<pts.length?sel[ctx]:null,p=pts[si??pts.length-1];
+    const hint={e1:"Сила — оценка, сколько ты поднял бы на 1 раз, по лучшему подходу: вес, повторы и запас (формула Эпли). Растёт и от веса, и от повторов, поэтому прогресс видно, даже когда вес тот же.",
+      kg:"Самый тяжёлый подход за тренировку. Вес растёт ступеньками, а между ними прибавляются повторы.",
+      reps:"Лучший подход по повторам. Когда начнёшь добавлять вес, смотри «Рабочий вес».",
+      time:"Самое долгое удержание за тренировку."}[m]+(ex.per?" Вес одной гантели.":"")+(m==="e1"||m==="kg"?" Если линия стоит больше 3–4 недель — добавь еды и сна.":"");
+    chart+=`<div class="stats in">
+      <div class="stat"><span class="label">Сейчас</span><b class="num">${mNum(m,last.y)}${u}</b><small>${fdate(last.r.date)}</small></div>
+      <div class="stat"><span class="label">Рекорд</span><b class="num">${mNum(m,best.y)}${u}</b><small>${fdate(best.r.date)}</small></div>
+      <div class="stat"><span class="label">${lbl}</span><b class="num${dv>=0.05?" up":""}">${dTxt}</b><small>${pct||"&nbsp;"}</small></div></div>
+    ${lineChart(pts,u,{pr:true,sel:si,tap:ctx,fmt:m==="e1"?f1:fmt,label:MN[m]+": "+ex.name})}
+    ${pts.length>1?`<div class="legend small"><span><i class="lg pr"></i>новый рекорд</span><span>нажми на график — покажу подходы</span></div>`:""}
+    <div class="readout"><div class="rh"><b>${si==null?"Последняя · ":""}${fdate(p.r.date)}</b>${yr(p.r.date)}${p.r.w.day?` <span class="tag">День ${p.r.w.day}</span>`:""}${p.pr?` <span class="tag go">рекорд</span>`:""}</div>
+      <div class="s num">${setsHtml(k,p.r.sets)}</div>
+      ${m==="e1"?`<div class="small">Сила ≈ ${f1(p.y)} кг — по подходу ${setTxt(k,p.best.kg,p.best.reps)}${p.best.rn==null?" (RIR не записан — считаю 2)":""}</div>`:""}
+      ${p.r.label||p.r.note?`<div class="note">${esc([p.r.label,p.r.note].filter(Boolean).join(" · "))}</div>`:""}</div>
+    <div class="hint">${hint}</div>`;
+  }
+  const by=new Map(pts.map(p=>[p.r,p]));let prev=null;
+  const items=rows.map(r=>{const p=by.get(r)||null,d=p&&prev?p.y-prev.y:null;if(p)prev=p;return{r,p,d}}).reverse();
+  const hist=`<div class="card stack"><div class="dayhead"><h2>Все записи</h2><span class="hint">${rows.length} ${plural(rows.length,"тренировка","тренировки","тренировок")}</span></div>
+    <ul class="exh">${items.map(({r,p,d})=>`<li><div class="hh"><span><b>${fdate(r.date)}</b>${yr(r.date)}${r.w.day?` <span class="tag">День ${r.w.day}</span>`:""}</span>
+      <span class="hv num">${p?(m==="e1"?"≈ ":"")+mNum(m,p.y)+u:""}${d!=null&&Math.abs(d)>=0.05?` <small class="dlt ${d>0?"up":"down"}">${d>0?"+":"−"}${mNum(m,Math.abs(d))}</small>`:""}${p&&p.pr?` <span class="tag go">рекорд</span>`:""}</span></div>
+      <div class="s num">${setsHtml(k,r.sets,true)}</div>
+      ${r.label||r.note?`<div class="note">${esc([r.label,r.note].filter(Boolean).join(" · "))}</div>`:""}</li>`).join("")}</ul></div>`;
+  return{chart,hist};
+}
+function nearestPt(svg,e){ // какую точку нажали: ближайшую по горизонтали
+  const xs=(svg.dataset.xs||"").split(",").filter(Boolean).map(Number);if(!xs.length)return null;
+  const r=svg.getBoundingClientRect();if(!r.width)return null;const vx=(e.clientX-r.left)/r.width*600;let bi=0;
+  xs.forEach((x,i)=>{if(Math.abs(x-vx)<Math.abs(xs[bi]-vx))bi=i});return bi;
+}
+function bwCard(){ // вес тела: точки, пунктир цели +1 кг/мес за последние 6 недель, темп — по прямой через точки (наименьшие квадраты)
+  const pts=sorted().filter(w=>num(w.bw)!=null).map(w=>({t:tsOf(w.date),y:num(w.bw),date:w.date}));
+  const last=pts[pts.length-1],win=last?pts.filter(p=>p.t>=last.t-42*DAY):[];
+  let pace=null;
+  if(win.length>=3&&last.t-win[0].t>=14*DAY){const n=win.length,mt=win.reduce((a,p)=>a+p.t,0)/n,my=win.reduce((a,p)=>a+p.y,0)/n;
+    const sxx=win.reduce((a,p)=>a+(p.t-mt)**2,0);if(sxx>0)pace=win.reduce((a,p)=>a+(p.t-mt)*(p.y-my),0)/sxx*DAY*30.44}
+  const goal=win.length>=2&&last.t>win[0].t?[{t:win[0].t,y:win[0].y},{t:last.t,y:win[0].y+(last.t-win[0].t)/DAY/30.44}]:null;
+  const sg=v=>(v>=0?"+":"−")+f1(Math.abs(v));
+  const V=pace==null?{c:"",t:"Мало данных: взвешивайся хотя бы раз в неделю — тогда посчитаю темп."}:
+    pace<0?{c:"warn",t:`Вес падает: ${sg(pace)} кг в месяц. Добавь ~300–500 ккал в день — например, ещё один приём пищи.`}:
+    pace<0.5?{c:"warn",t:`Медленно: ${sg(pace)} кг в месяц. Добавь ~200–300 ккал в день — например, перекус.`}:
+    pace<=2?{c:"ok",t:`В графике: ${sg(pace)} кг в месяц.`}:
+    {c:"ok",t:`Быстрее цели: ${sg(pace)} кг в месяц. В начале это нормально; если растёт живот — чуть меньше еды.`};
+  const si=sel.bw!=null&&sel.bw<pts.length?sel.bw:null,p=si!=null?pts[si]:last;
+  return`<div class="card stack"><div class="dayhead"><h2>Вес тела</h2><span class="hint">цель ≈ +1 кг в месяц</span></div>
+    ${pts.length>=2?`<div class="pace ${V.c}"><b>${pace==null?"Темп":"Темп с "+fdate(win[0].date)}</b><span>${V.t}</span></div>`:""}
+    ${lineChart(pts," кг",{goal,sel:si,tap:"bw",label:"Вес тела"})}
+    ${pts.length>=2?`<div class="legend small">${goal?`<span><i class="lg goal"></i>цель от ${fdate(win[0].date)}</span>`:""}<span>${si==null?"последнее ":""}${fdate(p.date)}: <b>${fmt(p.y)} кг</b></span></div>
+    <div class="hint">Взвешивайся в одно время, лучше утром до еды. Вес скачет ±1 кг от еды и воды — смотри на темп, а не на одну точку.</div>`:""}</div>`;
 }
 function renderGraph(){
-  const s=sorted();const ts=iso=>new Date(iso+"T12:00:00").getTime();
-  const bw=s.filter(w=>num(w.bw)!=null).map(w=>({t:ts(w.date),y:num(w.bw)}));
-  const used=Object.keys(EX).filter(k=>!EX[k].time&&s.some(w=>(w.entries||[]).some(e=>e.ex===k)));
-  if(!used.includes(graphEx)&&used.length)graphEx=used[0];
-  const ep=[];s.forEach(w=>{const e=(w.entries||[]).find(e=>e.ex===graphEx);if(!e)return;const kgs=e.sets.filter(x=>num(x.reps)!=null&&num(x.kg)!=null).map(x=>num(x.kg));if(kgs.length)ep.push({t:ts(w.date),y:Math.max(...kgs)})});
-  $("#v-graph").innerHTML=`<div class="card stack"><div class="dayhead"><h2>Вес тела</h2><span class="hint">цель: ≈ +1 кг в месяц</span></div>${lineChart(bw," кг")}</div>
-  <div class="card stack"><h2>Рабочий вес</h2>
-    <label class="field"><span class="label">Упражнение</span><select id="g-ex">${used.map(k=>`<option value="${k}" ${k===graphEx?"selected":""}>${esc(EX[k].name)}</option>`).join("")}</select></label>
-    ${lineChart(ep," кг")}
-    <div class="hint">Самый тяжёлый подход за тренировку${EX[graphEx]?.per?" (вес одной гантели)":""}. Если линия стоит больше 3–4 недель, а повторы не растут, стоит добавить еды.</div></div>`;
+  const used=usedEx();if(!used.includes(graphEx)&&used.length)graphEx=used[0];
+  const inP=new Set([...DAYS.A,...DAYS.B]);
+  const opts=[["День A",DAYS.A],["День B",DAYS.B],["Не в программе",Object.keys(EX).filter(k=>!inP.has(k))]].map(([g,ks])=>{const u=ks.filter(k=>used.includes(k));
+    return u.length?`<optgroup label="${g}">${u.map(k=>`<option value="${k}"${k===graphEx?" selected":""}>${esc(EX[k].name)}</option>`).join("")}</optgroup>`:""}).join("");
+  const V=used.length?exView(graphEx,"graph"):null;
+  $("#v-graph").innerHTML=bwCard()+`<div class="card stack"><h2>Прогресс в упражнении</h2>
+    ${V?`<select id="g-ex" aria-label="Упражнение">${opts}</select>${V.chart}`:`<div class="empty">Запиши первую тренировку — здесь появится прогресс.</div>`}</div>${V?V.hist:""}`;
 }
+function renderSheet(){ // окно упражнения: открывается нажатием на название в «Программе», «Записать» и «Истории»
+  if(!sheetEx)return;const k=sheetEx,ex=EX[k],V=exView(k,"sheet"),d=DAYS.A.includes(k)?"A":DAYS.B.includes(k)?"B":null;
+  $("#sheet-ttl").textContent=ex.name;
+  $("#sheet-body").innerHTML=`<div class="small">${d?`День ${d} · ${ex.sets||3} подхода · `:"Не в программе · "}${ex.lo}–${ex.hi} ${ex.time?"сек":"повт"}${ex.per?" · вес одной гантели":""}</div>
+    <div class="card stack">${V.chart}</div>${V.hist}`;
+}
+function openEx(k){
+  if(!EX[k])return;const a=document.activeElement;if(a&&a.tagName==="INPUT")a.blur();
+  sheetEx=k;sel.sheet=null;renderSheet();const sh=$("#sheet");sh.hidden=false;sh.scrollTop=0;
+}
+function closeEx(){sheetEx=null;$("#sheet").hidden=true}
 function renderData(msg,isErr){
   const lastCopy=Math.max(S.meta.lastBackup||0,TOKEN?(S.meta.lastSync||0):0);
   const cloud=!!(TOKEN&&S.meta.gistId);
@@ -616,12 +792,13 @@ function renderAll(){
   if(!S)return;renderStats();showTop();
   ["prog","log","hist","graph","data"].forEach(t=>{$("#v-"+t).hidden=t!==tab});
   ({prog:renderProg,log:()=>renderLog(),hist:renderHist,graph:renderGraph,data:()=>renderData()})[tab]();
+  if(sheetEx)renderSheet();
 }
-function go(t){readDraft();tab=t;confirmDel=null;document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t));renderAll();window.scrollTo(0,0)}
+function go(t){readDraft();tab=t;confirmDel=null;sel.graph=sel.bw=null;document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.t===t));renderAll();window.scrollTo(0,0)}
 
 /* ---------- События ---------- */
 $("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-t]");if(b)go(b.dataset.t)});
-document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)go(g.dataset.go)});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g){go(g.dataset.go);return}const h=e.target.closest("[data-exh]");if(h)openEx(h.dataset.exh)});
 $("#v-log").addEventListener("input",saveDraftSoon);
 $("#v-log").addEventListener("click",e=>{
   const dayB=e.target.closest("[data-day]");
@@ -630,6 +807,8 @@ $("#v-log").addEventListener("click",e=>{
   if(e.target.closest(".addset")){readDraft();const k=e.target.closest(".exlog").dataset.ex;const arr=draft.ex[k];
     const P=plan(k,draft.editId);const used=arr.map((s,i)=>s.ref===undefined?i:s.ref).filter(x=>x!=null);const r=used.length?Math.max(...used)+1:0;const t=P&&P.tg[r];
     arr.push({kg:t&&!EX[k].time?kgIn(t.kg):(arr[arr.length-1]||{}).kg||"",reps:"",rir:"",ref:t?r:null});S.draft=draft;persist();renderLog();return}
+  const rb=e.target.closest("button.rir");if(rb){toggleRir(rb);return}
+  const ch=e.target.closest(".rirbar [data-rir]");if(ch){pickRir(ch);return}
   if(e.target.closest(".del")){readDraft();const k=e.target.closest(".exlog").dataset.ex;draft.ex[k].splice(+e.target.closest(".setrow").dataset.i,1);S.draft=draft;persist();renderLog();return}
   if(e.target.closest("#save"))saveWorkout();
 });
@@ -640,7 +819,17 @@ $("#v-hist").addEventListener("click",async e=>{
   if(confirmDel!==id){confirmDel=id;renderHist();return}
   confirmDel=null;S.workouts=S.workouts.filter(w=>w.id!==id);S.deleted[id]=Date.now();markDirty();await persist();syncSoon();renderAll();
 });
-$("#v-graph").addEventListener("change",e=>{if(e.target.id==="g-ex"){graphEx=e.target.value;renderGraph()}});
+$("#v-graph").addEventListener("change",e=>{if(e.target.id==="g-ex"){graphEx=e.target.value;sel.graph=null;renderGraph()}});
+$("#v-graph").addEventListener("click",e=>{
+  const mb=e.target.closest("[data-metric]");if(mb){exMetric=mb.dataset.metric;sel.graph=null;renderGraph();return}
+  const sv=e.target.closest("svg[data-tap]");if(sv){const i=nearestPt(sv,e),t=sv.dataset.tap;if(i!=null){sel[t]=sel[t]===i?null:i;renderGraph()}}
+});
+$("#sheet").addEventListener("click",e=>{
+  if(e.target.closest("#sheet-x")){closeEx();return}
+  const mb=e.target.closest("[data-metric]");if(mb){exMetric=mb.dataset.metric;sel.sheet=null;renderSheet();return}
+  const sv=e.target.closest("svg[data-tap]");if(sv){const i=nearestPt(sv,e);if(i!=null){sel.sheet=sel.sheet===i?null:i;renderSheet()}}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetEx)closeEx()});
 $("#v-data").addEventListener("click",async e=>{
   if(e.target.closest("#exp")){try{const m=await exportFile();renderAll();if(m)renderData(m)}catch(err){renderData("Не получилось создать файл. Попробуй ещё раз.",true)}return}
   if(e.target.closest("#link")){const t=$("#tok").value.trim();if(!t)return renderData("Вставь токен.",true);
